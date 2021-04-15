@@ -1,0 +1,167 @@
+---
+title: "Reproducible Research Project 1"
+author: "Rodrigo"
+date: "4/14/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+Download the data
+```{r}
+data <- read.csv("activity.csv")
+library(tidyverse)
+library(ggplot2)
+```
+
+Grouping by date, summarizing by total steps, and removing the NA 
+```{r}
+steps_per_day <- data %>% group_by(date) %>% summarise(steps=sum(steps, na.rm = TRUE))
+```
+
+What is mean total number of steps taken per day?
+Plotting the Total number of steps taken per day 
+```{r}
+hist(steps_per_day$steps, main = "Total number of steps taken per day", 
+     xlab = "Days", ylab = "Total steps", col = "red", ylim = c(0,25), 
+     breaks = seq(0,25000, by=2500))
+```
+
+Creating the mean and median of steps per each day 
+```{r}
+steps_per_day_mean <- data %>% group_by(date) %>% summarise(steps=mean(steps, na.rm = TRUE))
+steps_per_day_median <- data %>% group_by(date) %>% summarise(steps=median(steps, na.rm = TRUE))
+mean_media_combined <- cbind(steps_per_day_mean[,1:2], steps_per_day_median[,2])
+colnames(mean_media_combined) <- c("date", "mean steps", "median steps")
+```
+
+Creating the mean and median of steps for total days
+```{r}
+mean(steps_per_day$steps, na.rm = TRUE)
+median(steps_per_day$steps, na.rm = TRUE)
+```
+
+What is the average daily activity pattern?
+Creating a dataframe to plot Steps per interval
+```{r}
+steps_per_interval_mean <- data %>% group_by(interval) %>% summarise(steps=mean(steps, na.rm = TRUE))
+```
+
+Plotting Steps per interval
+```{r}
+graph <- ggplot(data = steps_per_interval_mean, aes(x=interval, y= steps))
+```
+
+
+```{r}
+graph +  geom_line() +
+    ggtitle("Steps per interval") +  
+    xlab("Interval") + 
+    ylab("Steps (mean)") + 
+    expand_limits(x=c(1)) +
+    
+    theme(panel.border = element_blank(), 
+          panel.background = element_rect(fill = NA), 
+          panel.grid.major = element_line(colour= "gray90"), 
+          panel.grid.minor = element_blank(),  
+          axis.line = element_line(colour = "black", size = 0.5), 
+          text = element_text(size = 15),
+          axis.title.y= element_text(colour= "black", size= 15),
+          axis.text.x= element_text(size=10),
+          legend.title = element_text(size=7),
+          legend.text= element_text(size=7),
+          legend.position= c(1.3, 0.5), 
+          legend.justification = c(1.3, .5), 
+          aspect.ratio = 1) 
+```
+
+Finding the max maximun number of steps in wihich interval
+```{r}
+steps_per_interval_mean[which.max(steps_per_interval_mean$steps), ]$interval
+```
+
+Finding the number of missing data (NA) in the steps
+```{r}
+sum(is.na(data$steps))
+```
+
+Imputing missing values
+Replacing the NA for the mean step 1
+```{r}
+data_1 <- data
+missing_data <- is.na(data$steps)
+mean_imput <- mean(steps_per_day_mean$steps, na.rm = TRUE)
+```
+
+Replacing the NA for the mean step 2
+```{r}
+data_1$missing <- missing_data
+data_1$missing <- mean_imput
+final_table <- aggregate(steps~date, data_1, sum)
+```
+
+Ploting the data with the replacment of NA
+```{r}
+hist(final_table$steps, main = "Total number of steps taken per day", 
+     xlab = "Days", ylab = "Total steps", col = "red", ylim = c(0,25), 
+     breaks = seq(0,25000, by=2500))
+```
+
+
+```{r}
+mean(final_table$steps)
+```
+
+```{r}
+median(final_table$steps)
+```
+
+Are there differences in activity patterns between weekdays and weekends?
+Converting the column date to date format 
+```{r}
+data$date <- as.Date(strptime(data$date, format="%Y-%m-%d"))
+```
+
+Including a new column "day" with the characters Weekend and Weekday  
+```{r}
+data_2 <- data %>%
+    mutate(day = ifelse(weekdays(data$date)== "Saturday" | weekdays(data$date)== "Sunday", "Weekend", "Weekday"))
+```
+
+Getting the steps mean grouping by interval and day  
+```{r}
+mean_day <- data_2 %>% group_by(interval, day) %>% summarise(steps=mean(steps, na.rm = TRUE))
+```
+
+Plotting the mean steps dividing the graphs by Weekend and Weekday 
+```{r}
+graph <- ggplot(data = mean_day, aes(x=interval, y= steps))
+```
+
+```{r}
+graph +  geom_line() +
+    ggtitle("Steps per interval") +  
+    xlab("Interval") + 
+    ylab("Steps (mean)") + 
+    expand_limits(x=c(1)) +
+    
+    facet_wrap(~ day, ncol = 2, scales = "free") + 
+    
+    theme(panel.border = element_blank(), 
+          panel.background = element_rect(fill = NA), 
+          panel.grid.major = element_line(colour= "gray90"), 
+          panel.grid.minor = element_blank(),  
+          axis.line = element_line(colour = "black", size = 0.5), 
+          text = element_text(size = 15),
+          axis.title.y= element_text(colour= "black", size= 15),
+          axis.text.x= element_text(size=10),
+          legend.title = element_text(size=7),
+          legend.text= element_text(size=7),
+          legend.position= c(1.3, 0.5), 
+          legend.justification = c(1.3, .5), 
+          aspect.ratio = 1) 
+```
+
+
+
+
